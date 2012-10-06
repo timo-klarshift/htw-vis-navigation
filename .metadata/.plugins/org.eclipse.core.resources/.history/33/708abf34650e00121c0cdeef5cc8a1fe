@@ -1,0 +1,75 @@
+package vis.clustering.quad;
+
+import java.io.File;
+import java.util.ArrayList;
+
+import vis.clustering.nn.Dumper;
+import vis.lucene.IndexFactory;
+import vis.lucene.SearchCallback;
+import vis.lucene.SearchResult;
+import vis.lucene.Searcher;
+import vis.view.quads.QuadInspector;
+
+public class QuadTest {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		Searcher s = new Searcher(new File(IndexFactory.getImageIndexPath(0)));
+		final ArrayList<SearchResult> results= new ArrayList<SearchResult>();
+		
+		
+		
+		s.search("(yellow OR blue) and flower", 100, new SearchCallback() {
+			
+			@Override
+			public boolean onResult(SearchResult searchResult) {
+				System.out.println(searchResult);
+				results.add(searchResult);
+				return true;
+			}
+		});
+			
+		// use cluster finder to add images
+		/*ClusterFinder finder = new ClusterFinder(s, 1);	
+		ClusterObserver observer = new ClusterObserver(finder);
+		observer.start();				
+		finder.seed("red");	
+		for(ClusterNode n : finder.getResults()){
+			results.add(n.getResult());			
+		}*/
+		
+		
+		
+		int numi = results.size() - (results.size() % Quadrator.CLUSTER);
+		
+		
+		// read ids from results
+		int[] ids = new int[numi];
+		int o = 0;
+		for(SearchResult sr : results){
+			
+			ids[o++] = Integer.parseInt(sr.getId());
+			if(o>numi-1){
+				break;
+			}
+		}
+		
+		
+		// 
+		Quadrator q = new Quadrator(s);
+		QuadInspector qi = new QuadInspector(q);
+		q.match(ids);
+		
+		
+		
+		
+		
+		Dumper.dumpRow(q, s);
+		
+		
+		s.close();	
+	}
+
+}

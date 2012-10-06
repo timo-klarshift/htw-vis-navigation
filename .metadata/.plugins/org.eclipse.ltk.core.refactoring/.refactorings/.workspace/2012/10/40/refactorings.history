@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;vis-importer&apos; to &apos;vis-common&apos;" description="Rename resource &apos;vis-importer&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="/vis-importer" name="vis-common" stamp="1349365209075" updateReferences="true"/>
+</session>

@@ -1,0 +1,66 @@
+package vis.importer;
+
+import logging.VisLog
+import vis.config.VisConfig
+
+public class InitialImporter {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// init logging
+		VisLog.initLogging()
+		
+		// get config
+		VisConfig config = VisConfig.load()
+		
+		// get CVS directory
+		String csvDir = config.getDataPath() + "/" + config.data.csv.source.small.dir
+		if(args.size() > 0){
+			csvDir = args[0]
+		}
+		
+		// get max files to process
+		int max = config.importer.maxFiles
+		if(args.size() > 1) {
+			max = Integer.parseInt(args[1])
+		}
+		
+		// get max files to process
+		float minDF = config.importer.tagCollector.minDocFrequency
+		if(args.size() > 2) {
+			minDF = Float.parseFloat(args[2])
+		}
+		
+		// get minimum word count for importing image
+		// to database
+		int minWordCount = config.importer.csv2database.minWordCount
+		if(args.size() > 3) {
+			minWordCount = Integer.parseInt(args[3])
+		}
+		
+		// 
+		create(new File(csvDir), max, minDF, minWordCount);
+	}
+	
+	public static void create(File csvFolder, int maxFiles, float minDF, int minWordCount){
+		CSVReader r = new CSVReader(maxFiles);
+		
+		// 1st: collect tags
+		CSVTagCollector col = new CSVTagCollector(minDF);
+		r.setCallback(col);
+		r.importDirectory(csvFolder);
+
+		// 2nd: write to database
+		CSV2Database iw = new CSV2Database(col, minWordCount);
+		r.setCallback(iw);
+		r.importDirectory(csvFolder);
+		
+		// 3rd: index first layer
+		DbIndexer indexer = new DbIndexer(0, indexPath, 5000);
+		indexer.index();
+		indexer.shutdown();
+	}
+
+}

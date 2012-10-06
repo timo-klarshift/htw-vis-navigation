@@ -1,0 +1,129 @@
+package vis.importer;
+
+import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+import org.apache.log4j.Logger;
+
+import vis.db.ConnectionFactory;
+import vis.db.SqlHelper;
+
+/**
+ * writes images to database
+ * 
+ * @author timo
+ *
+ */
+public class CSV2Database implements CSVCallback {
+	
+	// collector reference
+	private CSVTagCollector tc;
+	
+	private Logger log = Logger.getLogger(this.getClass());
+	
+	// stats
+	private int addCount = 0;
+	private int removeCount = 0;	
+	private int minWordCount = 5;
+	
+	// db
+	Connection con;
+	
+	/**
+	 * create csv2database converter
+	 * @param tags
+	 */
+	public CSV2Database(CSVTagCollector tags, int minWordCount) {
+		this.tc = tags;
+		this.minWordCount = minWordCount;	
+		init();
+	}
+	
+	private void init(){
+		log.info("CSV2Database // minWordCount=" + minWordCount);
+		
+		// get connection
+		con = ConnectionFactory.getByName("images");
+		
+		// init database
+		SqlHelper h = new SqlHelper(con);
+		//h.execute("drop table if exists images_0");
+		String schema = SqlHelper.readSchema(getClass().getClassLoader(), "images.sql");
+		schema = schema.replaceAll("\\[LOD\\]", "0");
+		h.execute(schema);	
+	}
+	
+	
+
+	@Override
+	public void onImage(String id, String url, String tags) {
+		// get final tags for that image
+		// final == tags contained in tagCollectors filtered tag set
+		StringTokenizer tk = new StringTokenizer(tags, ",");
+		Set<String> finalTags = new HashSet<String>();
+		while(tk.hasMoreTokens()){
+			String t = tk.nextToken().trim().toLowerCase();			
+			if(tc.hasTag(t)){
+				finalTags.add(t);
+			}			
+		}
+		
+		// add images
+		if(finalTags.size() >= minWordCount){
+			addImage(id, url, finalTags);
+			addCount ++;
+		}else{
+			removeCount++;
+		}
+	}
+	
+	/**
+	 * add image
+	 * @param id
+	 * @param url
+	 * @param tags
+	 */
+	private void addImage(String id, String url, Set<String> tags){
+		
+		StringBuffer b = new StringBuffer();
+		for(String s : tags){
+			b.append(s);
+			b.append(" ");
+		}
+		
+		// add image
+		// TODO: write to database
+		//index.indexImage(id, b.toString().trim(), url);
+	}
+
+	@Override
+	public void onFileDone(File file) {
+
+	}
+
+	@Override
+	public void onDone() {
+		log.info("Imported " + addCount + " images. Skipped " + removeCount + " images.");	
+		shutdown();
+	}
+	
+	public void shutdown(){
+		try {
+			con.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void onStart() {
+		addCount = 0;
+		removeCount = 0;
+	}
+
+}

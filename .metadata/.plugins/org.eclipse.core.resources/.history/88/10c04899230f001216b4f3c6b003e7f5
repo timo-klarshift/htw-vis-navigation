@@ -1,0 +1,67 @@
+package vis.clustering;
+
+import vis.lucene.SearchResult;
+
+public class ClusterNode {
+	SearchResult result;
+	int level = 0;
+	String id;
+	
+	ClusterNode parent;
+	double parentDistance;
+	
+	public ClusterNode(SearchResult result){
+		this.result = result;	
+		this.id = result.getId();
+	}
+	
+	public String getSource(){
+		return result.getUrl();
+	}
+	
+	public void setParent(ClusterNode parent){
+		assert this != parent;
+		this.parent = parent;
+		this.parentDistance = 1-result.getScore();
+	}
+	
+	public double getSeedDistance(){
+		if(parent == null){
+			return 0;
+		}		
+		return parent.getSeedDistance() + parentDistance;			
+	}
+	
+	public double getDistance(){
+		return parentDistance;
+	}
+	
+	public int getLevel(){
+		if(parent == null){
+			return 0;
+		}
+		
+		return parent.getLevel()+1;
+	}
+	
+	public String getId(){
+		return id;
+	}
+
+	public String getTags() {
+		return result.getWords();
+	}
+	
+	public String toString(){
+		return "#" + getLevel() + " [" + result.getId() + " (" + (parent != null ? ("of " + parent.getId()) : "is seed") +")] sd=" + getSeedDistance() + " : score=" + result.getScore() + " : " + getTags();
+	}
+
+	public ClusterNode getParent() {
+		return parent;
+	}
+
+	public SearchResult getResult() {
+		return result;
+	}
+	
+}

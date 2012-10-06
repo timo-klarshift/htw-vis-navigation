@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;index.gsp&apos; to &apos;image&apos;&#x0A;- Original project: &apos;vis-web&apos;&#x0A;- Destination element: &apos;image&apos;&#x0A;- Original element: &apos;index.gsp&apos;" description="Copy file" element1="grails-app/views/index.gsp" files="1" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1348944188355" target="/vis-web/grails-app/views/image" units="0" version="1.0"/>
+</session>

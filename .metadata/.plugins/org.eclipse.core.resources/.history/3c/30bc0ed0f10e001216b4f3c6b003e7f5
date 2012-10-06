@@ -1,0 +1,26 @@
+package vis.clustering.quad;
+
+import java.sql.Connection;
+
+import vis.db.ConnectionFactory;
+
+public class QuadPosition {
+	Connection con;
+	
+	public QuadPosition(){
+		this.con = ConnectionFactory.getByName("images");
+	}
+	
+	public void write(int startLayer){
+		
+	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

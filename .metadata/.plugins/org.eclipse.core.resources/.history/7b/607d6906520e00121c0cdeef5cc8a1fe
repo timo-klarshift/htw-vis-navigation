@@ -1,0 +1,39 @@
+package vis.db
+
+import groovy.sql.Sql
+
+class VisualFeatures {
+	Sql sql
+	Map featureCache = [:]
+	
+	public VisualFeatures(){
+		init()
+	}
+	
+	private void init(){
+		// do database connection
+		
+		sql = Sql.newInstance(db.url, db.user, db.password, db.driver)
+		
+	}	
+	
+	public int[] getFeature(Integer fotoliaId){
+		def cached = featureCache[fotoliaId]
+		if(cached)return cached
+		
+		int[] features = null 
+		sql.rows("select fotolia_id, feature_vectors from image where fotolia_id=$fotoliaId limit 1").each{ row ->
+			features = row['feature_vectors']					
+		}
+		featureCache[fotoliaId] = features		
+		return features;
+	}
+
+	static main(args) {
+		def f = new VisualFeatures()
+		100.times{
+			println f.getFeature(20)
+		}
+	}
+
+}

@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 
 import org.apache.log4j.Logger;
@@ -19,7 +18,6 @@ import vis.lucene.SearchCallback;
 import vis.lucene.SearchResult;
 import vis.lucene.Searcher;
 import vis.lucene.TemporaryIndex;
-import vis.view.quads.QuadInspector;
 
 /**
  * input: an index output: writes images to upper layer

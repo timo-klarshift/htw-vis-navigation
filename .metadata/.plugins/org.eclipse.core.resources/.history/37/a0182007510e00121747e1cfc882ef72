@@ -1,0 +1,28 @@
+package vis.db
+
+import java.sql.Connection
+import java.sql.DriverManager
+
+import vis.config.VisConfig
+
+class ConnectionFactory {
+	
+	static Connection get(String url, String user, String password){
+		Connection c = DriverManager.getConnection( url , user , password );
+		return c;
+	}
+	
+	static Connection getByName(String name){
+		def config = VisConfig.getInstance().database.sources
+		def dbData = config[name]
+		println dbData
+		return null
+		
+	}
+
+	static main(args) {
+		VisConfig.load()
+		println ConnectionFactory.getByName("images")
+	}
+
+}

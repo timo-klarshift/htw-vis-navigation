@@ -5,12 +5,11 @@ import java.util.Random;
 import org.apache.log4j.Logger;
 
 import vis.db.VisualFeatures;
-import vis.lucene.Searcher;
 import vis.metric.Metric;
-import vis.view.quads.QuadInspector;
 
 /**
  * quadrator quad matcher
+ * 
  * finds a quadruple of images in a set of images
  * using evolutionary strategy
  * 
@@ -45,12 +44,14 @@ public class Quadrator {
 	
 	/**
 	 * create quadrator
-	 * @param searcher
 	 */
 	public Quadrator(){
-		//this.searcher = searcher;
 	}
 	
+	/**
+	 * get current id ordering
+	 * @return
+	 */
 	public int[] getIds(){
 		int[] finalIds = new int[nodeCount];
 		for(int i=0; i<nodeCount; i++){
@@ -67,6 +68,10 @@ public class Quadrator {
 		return quadScore;
 	}
 	
+	/**
+	 * match 
+	 * @param imageIds
+	 */
 	public void match(int[] imageIds){
 		
 		// init
@@ -77,8 +82,7 @@ public class Quadrator {
 			return;
 		}
 		
-		// data holders
-		
+		// data holders		
 		finalDMatrix = new byte[nodeCount][nodeCount];
 		nodeList = new int[nodeCount];
 		quadList = new int[nodeCount];
@@ -100,10 +104,14 @@ public class Quadrator {
 		if(quadCount < 2){
 			log.warn("Only on quad ...");
 		}else{
-			this.match();	
+			this.generate();	
 		}						
 	}
 	
+	/**
+	 * get current total score
+	 * @return
+	 */
 	public double getTotalScore(){
 		return totalScore;
 	}
@@ -121,17 +129,21 @@ public class Quadrator {
 	
 	/**
 	 * retrieve double encoded score
-	 * TODO: maybe this is also an point of bottleneck reduction
 	 * @param a
 	 * @param b
 	 * @return
 	 */
 	private double _dist(int a, int b){
-		double d = ((int)(finalDMatrix[a][b])+128)/255.0;
-		
+		double d = ((int)(finalDMatrix[a][b])+128)/255.0;		
 		return (d); //[0-255]
 	}
 	
+	/**
+	 * calculate and store the quad count
+	 * for a quad with given id
+	 * @param i
+	 * @return
+	 */
 	private double getQuadScore(int i){
 		// get distances from all nodes to each other
 		double[] meanN2M = new double[CLUSTER];
@@ -158,19 +170,27 @@ public class Quadrator {
 		for(int n=0; n<CLUSTER; n++){
 			mmeanN2M += meanN2M[n];
 		}
-		//System.out.println(mmeanN2M);
 		mmeanN2M /= CLUSTER;
 		
 		return 1.0-mmeanN2M;
 	}
 	
+	/**
+	 * select a quad group by random
+	 * unequal to another index
+	 * @param unequal
+	 * @return
+	 */
 	private int selectQuad(int unequal){
 		int r = unequal;	
 		while(r == unequal){ r = random.nextInt(quadCount);	}		
 		return r;			
 	}	
 		
-	private void match(){
+	/**
+	 * the generation loop
+	 */
+	private void generate(){
 		maxIterations = nodeCount*nodeCount;
 		
 		int q1, q2;
@@ -181,23 +201,9 @@ public class Quadrator {
 					
 			// mutate
 			mutateSwap(q1, q2);			
-							
-			// repaint
-			if(i % 100 == 0){
-				//updateUI();
-				//log.info("#" + i + " :: " + totalScore + " | " + learnRate);		
-			}
-					
-
 		}
 		
 		updateUI();
-	}
-	
-	private void updateUI(){
-		if(QuadInspector.instance != null){
-			QuadInspector.instance.repaint();
-		}
 	}
 	
 	/**
@@ -219,7 +225,7 @@ public class Quadrator {
 		double s1 = getQuadScore(q1);
 		double s2 = getQuadScore(q2);
 		double scoreGain = (s1+s2) - (quadScore[q1]+quadScore[q2]); 
-		if(scoreGain > 0 ){ // TODO: variance swap
+		if(scoreGain > 0 ){ 
 			quadScore[q1] = s1;
 			quadScore[q2] = s2;
 			totalScore += scoreGain;
@@ -228,6 +234,18 @@ public class Quadrator {
 			swapNodes(quadList, n1, n2);
 		}				
 	}	
+	
+	/**
+	 * update the quad inspector when 
+	 * available
+	 */
+	private void updateUI(){
+		if(QuadInspector.instance != null){
+			QuadInspector.instance.repaint();
+		}
+	}
+	
+	
 
 	/**
 	 * swap two nodes
@@ -304,6 +322,11 @@ public class Quadrator {
 		System.out.println("");
 	}
 
+	/**
+	 * retrieve all mean distances for
+	 * every node
+	 * @return
+	 */
 	public double[] getNodeMeanDistances() {
 		return nodeDistances;
 	}

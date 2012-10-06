@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+	<head>
+		<meta name="layout" content="main"/>
+		<title>Welcome to Grails</title>
+		
+	</head>
+	<body>
+		<g:each in="${results }" var="image">
+			<img src="${image.url }" />
+		</g:each>
+	</body>
+</html>

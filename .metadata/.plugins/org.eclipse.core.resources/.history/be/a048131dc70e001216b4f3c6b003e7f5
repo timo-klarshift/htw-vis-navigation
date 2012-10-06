@@ -1,0 +1,27 @@
+package image;
+
+import java.sql.ResultSet;
+
+import org.apache.lucene.document.Document;
+
+public class Image {
+
+	private Integer id = null;
+	private Integer fotoliaId = null;
+	private String words = null;
+	private String thumbPath;
+	
+	public Image(int id, int fotoliaId, String thumbPath, String words){
+		this.id  = id;
+		this.fotoliaId = fotoliaId;
+		this.thumbPath = thumbPath;
+		this.words = words;
+	}	
+	
+	public Document toDocument(){
+		
+	}
+	
+	
+
+}

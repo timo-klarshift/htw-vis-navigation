@@ -1,0 +1,90 @@
+package vis.importer;
+
+import image.Image;
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+import vis.lucene.Indexer;
+
+/**
+ * emits final images
+ * to a given index
+ * (this is not used in the project)
+ * 
+ * @author timo
+ *
+ */
+public class CSVIndexWriter implements CSVCallback {
+	public static final int MIN_WORDS = 2;
+	private CSVTagCollector tc;
+	private int addCount = 0;
+	private int removeCount = 0;
+	Indexer index;
+	
+	
+	public CSVIndexWriter(CSVTagCollector tags, String indexPath) {
+		this.tc = tags;
+		index = new Indexer(new File(indexPath), true);
+	}
+
+	@Override
+	public void onImage(String id, String url, String tags) {
+		StringTokenizer tk = new StringTokenizer(tags, ",");
+		Set<String> finalTags = new HashSet<String>();
+		while(tk.hasMoreTokens()){
+			String t = tk.nextToken().trim().toLowerCase();			
+			if(tc.hasTag(t)){
+				finalTags.add(t);
+			}			
+		}
+		
+		// add images
+		if(finalTags.size() >= MIN_WORDS){
+			addImage(id, url, finalTags);
+			addCount ++;
+		}else{
+			removeCount++;
+		}
+	}
+	
+	/**
+	 * add image
+	 * @param id
+	 * @param url
+	 * @param tags
+	 */
+	private void addImage(String id, String url, Set<String> tags){
+		
+		StringBuffer b = new StringBuffer();
+		for(String s : tags){
+			b.append(s);
+			b.append(" ");
+		}
+		
+		// index image
+		Image i = new Image(id, fotoliaId, thumbPath, words)
+		index.indexImage(id, b.toString().trim(), url);
+	}
+
+	@Override
+	public void onFileDone(File file) {
+
+	}
+
+	@Override
+	public void onDone() {
+		System.out.println("Imported " + addCount + " images. Removed " + removeCount + " images.");
+		index.close();
+	}
+
+	@Override
+	public void onStart() {
+		addCount = 0;
+		removeCount = 0;
+		System.out.println("Writing images ...");
+	}
+
+}

@@ -1,0 +1,89 @@
+package vis.clustering.nn
+
+import groovy.xml.MarkupBuilder
+
+import org.apache.lucene.document.Document
+import org.apache.lucene.index.IndexReader
+
+import vis.clustering.ClusterNode
+import vis.clustering.quad.Quadrator
+import vis.lucene.SearchResult
+import vis.lucene.Searcher
+
+public class Dumper {
+	
+	public static void dumpIndex(Searcher s1, Searcher s2){
+		IndexReader r = s1.getSearcher().getIndexReader()
+		FileWriter writer = new FileWriter(new File("index-dump.html"))
+		MarkupBuilder mb = new MarkupBuilder(writer);
+		mb.html(){
+			h1("Cluster dump")
+			div(){
+				for(int i=0; i<r.numDocs() ; i++){
+					Document d = r.document(i);
+					def ids = d.get("children").split(" ").collect{it.trim()}
+					println ids
+					
+					div(){
+						ids.each{ id ->
+							SearchResult n = new SearchResult(s2.get(id.toString()), 0.0);
+							img(style: "", title: "${n.id}", src: n.url)
+						}
+					}
+				}
+			}
+		}
+		r.close()
+	}
+
+	public static void dumpCluster(ClusterFinder finder){
+		println "dumping ..."
+		def results= finder.getResults()		
+		FileWriter writer = new FileWriter(new File("cluster-dump.html"))
+		MarkupBuilder mb = new MarkupBuilder(writer);
+		mb.html(){
+			h1("Cluster dump")
+			div(){				
+				finder.getResults().each{ ClusterNode n ->					
+					img(style: "width: ${Math.round((5/n.seedDistance)*50)}px; border: ${n.parent ? '' : '3px solid green' };", title: "${n.id} // ${n.tags} // ${n.seedDistance}", src: n.getSource())
+				}
+			}
+		}
+		println ""
+		writer.close();
+	}
+	
+	public static void dumpRow(Quadrator quad, Searcher searcher){
+		println "dumping ..."
+		def results=quad.getIds().collect{ fid ->
+			return new ClusterNode(new SearchResult(searcher.getByTerm("fotoliaId", fid.toString()), 0))
+		}
+		
+		def qs = quad.getQuadScore()
+		
+		FileWriter writer = new FileWriter(new File("cluster-dump.html"))
+		MarkupBuilder mb = new MarkupBuilder(writer);
+		mb.html(){
+			h1("Cluster dump")
+			div(){
+				int o=0;
+				results.each{ ClusterNode n ->
+					int qid = o/4;
+					if(qs[qid] > 0.01 || true){
+						img(style: "width: 40px; border: ${n.parent ? '' : '3px solid green' };", title: "${n.id} // ${n.tags} // ${n.seedDistance}", src: n.getSource())
+					}
+					
+					o++
+					if(o%4==0){
+						br()
+					}
+				}
+			}
+		}
+		println ""
+		writer.close();
+	}
+	
+	
+
+}

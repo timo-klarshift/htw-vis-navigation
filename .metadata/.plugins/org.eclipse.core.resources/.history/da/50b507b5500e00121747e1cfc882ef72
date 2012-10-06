@@ -1,0 +1,9 @@
+package vis.db
+
+class ConnectionFactory {
+
+	static main(args) {
+	
+	}
+
+}

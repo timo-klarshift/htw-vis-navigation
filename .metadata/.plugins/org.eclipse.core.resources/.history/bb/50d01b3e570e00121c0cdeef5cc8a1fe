@@ -1,0 +1,28 @@
+package vis.db
+
+import java.sql.Connection
+import java.sql.Statement
+
+class SqlHelper {
+	Connection con;
+	
+	SqlHelper(Connection con){
+		this.con = con;
+	}
+
+	void dumpFile(File sqlFile, Map replaceMap = [:]){
+		String content = 
+		replaceMap.each{ r -> content = content.replaceAll(r.key, r.value)}
+		execute(content)			
+	}
+	
+	public String readSchema(String name){
+		return getClass().getClassLoader().getResource(resourcePath).getText()
+	}
+	
+	public boolean execute(String sql){
+		Statement stmt = con.createStatement()
+		return stmt.execute(sql)
+	}
+
+}

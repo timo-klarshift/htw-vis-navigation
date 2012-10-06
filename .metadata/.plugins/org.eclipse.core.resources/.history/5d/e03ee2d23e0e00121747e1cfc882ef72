@@ -1,0 +1,56 @@
+package vis.importer;
+
+import java.io.File;
+
+public class CSVReaderExample implements CSVCallback {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		if(args.length == 0)
+			createTestIndex();
+	}
+	
+	public static void createTestIndex(){
+		createIndexFromCSV(new File("../../data/fotolia-csv-small"), 5, 0.01f);
+	}
+	
+	public static void createIndexFromCSV(File csvFolder, int maxFiles, float minDF){
+		CSVReader r = new CSVReader(maxFiles);
+		
+		// 1st: collect tags
+		CSVTagCollector col = new CSVTagCollector(minDF);
+		r.setCallback(col);
+		r.importDirectory(csvFolder);
+
+		// 2nd: write to database
+		CSVIndexWriter iw = new CSVIndexWriter(col);
+		r.setCallback(iw);
+		r.importDirectory(csvFolder);
+	}
+
+	@Override
+	public void onImage(String id, String url, String tags) {
+		log.debug("Image Callback: ID=" + id + " / " + url + " :: " + tags);
+	}
+
+	@Override
+	public void onFileDone(File file) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onDone() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onStart() {
+		// TODO Auto-generated method stub
+		
+	}
+
+}

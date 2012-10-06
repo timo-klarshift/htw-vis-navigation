@@ -1,0 +1,79 @@
+package vis.db;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+
+/**
+ * implement caching
+ * 
+ * @author timo
+ * 
+ */
+public class VisualFeatures {
+	private Connection con;
+	private PreparedStatement stmt = null;
+	private HashMap<Integer,Cached> cache = new HashMap<Integer, Cached>();
+	
+
+	public VisualFeatures() {
+		init();
+	}
+
+	private void init() {
+		// do database connection
+		con = ConnectionFactory.getByName("features");
+
+		// select statement
+		try {
+			stmt = con
+					.prepareStatement("select feature_vectors from image where fotolia_id=? limit 1");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public byte[] getFeature(Integer fotoliaId) {
+		Cached cached = cache.get(fotoliaId);
+		if(cached != null)return cached.features;
+		
+		byte[] features = null;
+		try {
+			// set params
+			stmt.setInt(1, fotoliaId);
+
+			// query and read
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				features = rs.getBytes(1);
+				cache.put(fotoliaId, new Cached(features));
+			}
+
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return features;
+	}
+
+	public void shutdown() {
+		try {
+			con.close();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private class Cached {		
+		public byte[] features = null;
+		public Cached(byte[] features){			
+			this.features = features;
+		}
+	}
+
+}

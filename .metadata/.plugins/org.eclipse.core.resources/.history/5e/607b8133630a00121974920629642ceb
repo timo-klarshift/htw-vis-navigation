@@ -1,0 +1,12 @@
+package vis.lucene;
+
+public class SimpleCallback implements SearchCallback {
+
+	@Override
+	public boolean onResult(SearchResult searchResult) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	
+}

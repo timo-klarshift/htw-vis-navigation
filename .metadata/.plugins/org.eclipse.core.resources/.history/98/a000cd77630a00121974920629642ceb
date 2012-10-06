@@ -1,0 +1,12 @@
+package vis
+
+import vis.lucene.Searcher
+
+class ImageController {
+
+    def index() {
+		def searcher = new Searcher(new File("../index/index"))
+		def sb = new SimpleCallback(0.1)
+		searcher.search(params.q ?: 'flower', params.max ?: 20, sb)	
+	}
+}

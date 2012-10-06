@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en" id="3dVis">
+  <head>
+  	<title>3D-Vis WebGL version</title>
+  	<meta charset="utf-8">
+  	<link type="text/css" rel="stylesheet" href="styles/styles.css">
+  	<script type="text/javascript" src="libs/Three.js"></script>
+  	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+  </head>
+   
+  <body>
+	<div name="searchBar" id="searchBar">
+		<input type="text" class="search" name="searchKeyword" id="searchKeyword" value="keyword" size="33"/> 
+		<input type="text" class="search" name="searchCount" id="searchCount" value="200" size="10"/>
+		<button type="button" class="search" name="searchButton" id="searchButton" onclick="start(searchKeyword.value, searchCount.value);">start</button>
+		<button type="button" class="search" name="sessionStart" id="sessionStart" onclick="sessionStart();">start session</button>
+		<button type="button" class="search" name="clear" id="clear" onclick="clearAll();">clear</button>
+		<div id="loading" class="search"></div>
+	</div>
+	
+    <script type="text/javascript"> 
+    
+ 		var keyword,imageCount, url, stats;
+  		var scene, camera, renderer, controls, material, geometry, projector, group;
+  		var image, texture, dataTexture, imageList, contextList;
+  		var canvasHeight = window.innerHeight -60;
+  		var canvasWidth = window.innerWidth -10;
+  		var MAX_IMG_WIDTH = 40, MAX_IMG_HEIGHT = 40;
+  		var imgHeight = 32, imgWidth = 32;
+   	 	var mouse = { x: 0, y: 0 }, INTERSECTED;
+   	 	var loadedImages= 0;
+   		var baseUrl = 'http://141.45.146.52:9900/vis-web/image/';
+	 	var clickState = false;
+	 	var lastX = 0, lastY = 0, moveX, moveY;
+	 	var sessionId = null;
+	 	var oldCamPos = { x: 0, y: 0 }, newCamPos = {x:0,y:0};
+	 	var arrayX = 40, arrayY=25;
+	 	
+   	 	init();
+   	 	animate();
+   	 	
+   	 	// startet eine neue session
+   	 	function sessionStart() {
+   	 		var url = 'http://141.45.146.52:9900/vis-web/session/start?width='+arrayX+'&height='+arrayY;
+   	 		url = 'http://localhost/webGL/webGlUsingThree/proxy.php?url='+escape(url);	 	
+   	 		
+   	 		$.ajax(url, {
+			  	    crossDomain:true, 
+			  	    dataType: 'json',
+			  	    success:function(data){	  	    	    	
+			  	    	sessionId = data.sessionId;
+			  	    }	  	      		  		
+		  	  	});
+   	 	}
+   	 	
+   	 	// clear
+   	 	function clearAll() {
+   	 		console.log("clear all.");
+   	 		clearScene();
+   	 		imageList = null;
+   	 		contextList = null;
+   	 		init();
+   	 		
+ 	 		var url = 'http://141.45.146.52:9900/vis-web/image/clear';
+	 		url = 'http://localhost/webGL/webGlUsingThree/proxy.php?url='+escape(url);	 	
+	 		
+	 		$.ajax(url, {
+			  	    crossDomain:true, 
+			  	    dataType: 'json',
+			  	    success:function(data){	  	    	    	
+			  	    }	  	      		  		
+		  	  	});
+	 	}
+   	 	
+   	 	// wird vom search button aufgerufen
+   	 	function start(kw, count) {
+	   		showLoadingSpinner(true);
+   	 		keyword = kw;
+   	 		imageCount = count;
+   	 		console.log("session: " + sessionId);
+   	 		console.log("Keyword: " + keyword);
+   	 		console.log("Image count: " + imageCount);
+   	 		clearScene();
+	      	// 3D Vis request
+	      	getImageList(getUrl(keyword, count));
+   	 	}
+   	 	
+   	 	// init
+  		function init() {
+  			scene = new THREE.Scene();
+  			projector = new THREE.Projector();  	  
+  			// renderer
+ 	     	renderer = new THREE.WebGLRenderer();
+ 	      renderer.setSize(canvasWidth, canvasHeight);
+ 	   		renderer.autoUpdateScene = true;
+ 	   		
+      	// camera
+  			camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 100000 );
+			  camera.position.z = 500;
+	      scene.add(camera);
+	      document.body.appendChild( renderer.domElement );
+	       
+ 	    	document.addEventListener( 'mousemove', onMouseMove, false );
+ 	    	document.addEventListener( 'mousewheel', onMouseWheel, false );
+ 	    	document.addEventListener( 'click', onMouseClick, false );
+       	document.addEventListener( 'mousedown', onMouseDown, false);
+       	document.addEventListener( 'mouseup', onMouseUp, false);
+       	document.onkeypress = keyPressed;
+ 	      	
+ 	     	// create arrays
+ 	     	create2DArrays();
+  		}
+  		 
+   		// draw single image
+   		function drawImage(image) {
+  			var posX=image.x,posY=image.y;			
+  			var needToDraw = true;
+  			for(var i = 0; i < group.children.length; i++) {
+  				if(image.id == group.children[i].id) {
+  						console.log("doppeltes bild");
+  						needToDraw = false;
+  				}
+  			}
+  			
+  			if(needToDraw) {
+	  			// texture and material
+	  			texture = new THREE.Texture(image.canvas);
+	      		texture.needsUpdate = true; 
+	      		material = new THREE.MeshBasicMaterial( { map: texture} );
+	      		
+	      		// create mesh
+				mesh = new THREE.Mesh( new THREE.PlaneGeometry(imgWidth, imgHeight), material);	
+				mesh.doubleSided = true;
+				mesh.rotation.x = 1.57;
+				mesh.position.x = (-(canvasWidth/2) + posX * MAX_IMG_WIDTH );
+				mesh.position.y = ((canvasHeight/2) - posY * MAX_IMG_HEIGHT );
+				mesh.id = image.id;	
+				// add to scene
+				group.add(mesh);
+  			}
+  		}  
+  		
+  		// draw all images from imageList
+  		function draw() {
+  			console.log("draw");		
+  			// group element
+ 	   		group = new THREE.Object3D();
+			// schleife ueber die imageList
+  			for(var i = 0; i < imageList.length; i++) {
+  				for(var j = 0; j < imageList[i].length; j++) {					
+  					var image = imageList[i][j];
+  					if(image != null) {
+						
+		  				// texture and material
+						texture = new THREE.Texture(image.canvas);
+			      		texture.needsUpdate = true; 
+			      		material = new THREE.MeshBasicMaterial( { map: texture} );
+					
+			     		// create mesh
+		    			mesh = new THREE.Mesh( new THREE.PlaneGeometry(imgWidth, imgHeight), material);	
+		    			mesh.doubleSided = true;
+		 				mesh.rotation.x = 1.57;
+		 				mesh.position.x = (-(canvasWidth/2) + i * MAX_IMG_WIDTH );
+		 				mesh.position.y = ((canvasHeight/2) - j * MAX_IMG_HEIGHT );
+		 				mesh.id=image.id;
+		
+		    			// add to the container group
+		    	 		group.add(mesh);
+  					}
+				}
+  			}
+  			// add to scene
+			scene.add(group);
+  		}
+  		
+  		function drawContextList() {
+  			console.log("draw" + contextList.length);	
+  			// group element
+ 	   		group = new THREE.Object3D();
+			// schleife ueber die imageList
+  			for(var i = 0; i < contextList.length; i++) {
+  	  			for(var j = 0; j < contextList[i].length; j++) {					
+  	  				var image = contextList[i][j];
+  	  				if(image != null) {
+					
+		  				// texture and material
+						texture = new THREE.Texture(image.canvas);
+			      		texture.needsUpdate = true; 
+			      		material = new THREE.MeshBasicMaterial( { map: texture} );
+					
+			     		// create mesh
+		    			mesh = new THREE.Mesh( new THREE.PlaneGeometry(imgWidth, imgHeight), material);	
+		    			mesh.doubleSided = true;
+		 				mesh.rotation.x = 1.57;
+		 				mesh.position.x = (-(canvasWidth/2) + i * MAX_IMG_WIDTH );
+		 				mesh.position.y = ((canvasHeight/2) - j * MAX_IMG_HEIGHT );
+		 				mesh.id=image.id;
+		
+		    			// add to the container group
+		    	 		group.add(mesh);
+  	  				}
+				}
+  			}
+  			// add to scene
+			scene.add(group);
+  		}
+  		
+  		// DrawContext wird zum zeichnen neuer Bilder aufgerufen
+  		// zeichnet nur die noch nicht vorhanden Bilder neu
+  		function drawContext(shiftX, shiftY) {
+  			if(contextList != null && imageList != null) {
+  				
+  				for(var x = 0; x < arrayX; x++){
+  					for(var y = 0; y < arrayY; y++) {
+  						var newImage = contextList[x][y];
+  						var oldImage = imageList[x][y];
+  						// wenn arrayShift umgesetzt wurde, dann sollte das hier so funktionieren
+  						// shift operation sorgt dafuer, dass alle Bilder in der alten Liste vorher
+  						// schon verschoben werden.
+
+  						if(oldImage != null && newImage != null && oldImage.id == newImage.id)  {
+  							console.log("beide Bilder gleich.");
+  						}
+  
+	  						// Altes Bild loeschen, wenn es in der neuen Liste nicht mehr vorkommt
+	  						if(oldImage != null && newImage == null) {
+	  							// oldImage loeschen
+	  							removeImage(oldImage);
+	  							// oldImage aus imageList loeschen
+	  							removeImageFromArray(imageList, oldImage);
+	  							
+	  						}
+							// neues Bild zeichnen, wenn es noch nicht in der alten Liste ist
+							else if(oldImage == null && newImage != null) {
+								// newImage zeichnen
+								drawImage(newImage);
+								// newImage in imageList
+								setImageToArray(imageList, newImage);
+							}
+  						//}
+  					}
+  				}
+  			}
+  		}  
+  		
+/*    		function drawContext(shiftX, shiftY) {
+  			scene.remove(group);
+  			imageList = contextList;
+  			drawContextList();
+  			
+  		}  */
+  		
+  		// remove images
+  		function removeImages(){
+  			var size = group.children.length;
+  			for(var i = 0; i < size; i++) {
+  				var child = group.children[i]; 
+  				group.remove(child);
+  				//console.log("removed");
+  			}
+  			//scene.remove(group);
+  		}
+  		
+  		// removes an image
+  		function removeImage(image) {		
+  			for(var i = 0; i < group.children.length; i++) {
+  				var child = group.children[i]; 
+  				if(child.id == image.id) {
+  					//console.log("remove: " + image.id);
+  					// remove from group
+  					group.remove(child);
+  				}
+  			}
+  		}
+  		
+  		// shift image
+  		function shiftImage(group, image, x, y) {
+  			for(var i = 0; i < group.children.length; i++) {
+  				var child = group.children[i];
+  				if(child.id == image.id) {
+  					if(x != 0) {
+  						child.position.x += (x * MAX_IMG_WIDTH);
+  					}
+  					if(y != 0) {
+  						child.position.y += (y * MAX_IMG_HEIGHT);
+  					}
+  				}
+  			}
+  		}
+  		
+  		// removes a value from the list
+  		function removeFromList(list, value) {
+  			var index = list.indexOf(value);
+			if(index != -1) {
+				list.splice(index, 1);
+			}
+  		}
+  		
+  		//
+  		// animate and render
+  		//
+  		// animate
+  		function animate() {
+  	        requestAnimationFrame( animate );
+  	        render();
+  	    }
+
+  		// render
+  	    function render() {
+  	    	// intersection taken and modified from three.js example
+  	    	// original source: http://mrdoob.github.com/three.js/examples/webgl_interactive_cubes.html    	
+  	    	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+			projector.unprojectVector( vector, camera );
+			var ray = new THREE.Ray( camera.position, vector.subSelf( camera.position ).normalize() );
+			if(group != null) {
+				var intersects = ray.intersectObjects( group.children );
+	
+				if ( intersects.length > 0 ) {
+					if ( INTERSECTED != intersects[ 0 ].object ) {
+						if ( INTERSECTED ) {
+							INTERSECTED.scale = new THREE.Vector3( 1, 1, 1 );
+						}
+						INTERSECTED = intersects[ 0 ].object;
+						INTERSECTED.scale = new THREE.Vector3( 1.2, 1, 1.2 );
+					}
+	
+				} else {
+					if ( INTERSECTED ) {
+						INTERSECTED.scale = new THREE.Vector3( 1, 1, 1 );
+					}
+					INTERSECTED = null;
+				}
+			}
+			//controls.update();
+			renderer.clear();
+			renderer.render( scene, camera );
+  	    }
+  	    
+  	    //
+  	    // resize handling
+  	    //
+  	    // on resize event
+  	    function resizeCanvas() {
+  	    	updateCanvas();
+  	    }
+  	    // update: clear, update size and draw
+  	    function updateCanvas() {
+  	    	clearScene();
+  	    	canvasHeight = window.innerHeight-60;
+  	  		canvasWidth = window.innerWidth -10;
+  	  		console.log(canvasHeight + " * " + canvasWidth);
+  	  		var MAX_IMG_WIDTH = 40, MAX_IMG_HEIGHT = 40;
+  	  		var imgHeight = 32, imgWidth = 32;
+  	   		renderer.setSize(canvasWidth, canvasHeight);
+ 			draw();
+  	   		
+  	    }
+  	    
+  		// clear the scene
+  		function clearScene() {
+  			if(group != null) {
+	            var children = group.children;
+	            for(var i = 0; i < children.length; i++) {
+	                var child = children[i];
+	                group.remove(child);
+	            }
+	            scene.remove(group);
+  			}
+        }
+  	    
+        //
+  	    // Mouse events
+  	    //
+  		// Mouse move event	    
+  	    function onMouseMove( event ) {
+			event.preventDefault();
+ 			mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+			mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;		
+			// move the camera
+			moveX = ( event.clientX - lastX );
+			moveY = - ( event.clientY - lastY );		
+			lastX = event.clientX;
+			lastY = event.clientY;
+			if(clickState) {
+				camera.position.x -= moveX;
+				camera.position.y -= moveY;
+				 
+			//	group.translateX(moveX);
+			//	group.translateY(moveY);
+			}
+
+		}
+        //
+        // mouse down event
+        function onMouseDown( event ) {
+        	clickState = true;
+        	oldCamPos.x = camera.position.x;//group.position.x;
+        	oldCamPos.y = camera.position.y;//group.position.y;
+        	
+        }
+        //
+        // mouse up event
+        function onMouseUp( event ) {
+        	clickState = false; 	
+        	newCamPos.x = camera.position.x;;//group.position.x;
+        	newCamPos.y = camera.position.y;//group.position.y;
+        	var changedContextX = (newCamPos.x - oldCamPos.x);
+        	var changedContextY = (newCamPos.y - oldCamPos.y);
+			var testX = (Math.floor(changedContextX / MAX_IMG_WIDTH));
+			var testY = (Math.floor(changedContextY / MAX_IMG_HEIGHT));
+			
+        	// Contextanfrage 
+        	if(testX != 0 || testY != 0) {
+        		console.log("verschiebung: " + testX + " " + testY);
+        		shiftArray(testX, testY);
+        		getImageContextList(getContextUrl(testX, testY), testX, testY);
+        	}
+        }
+		//
+        // mouse click event
+  	  	function onMouseClick( event ) {
+			if(INTERSECTED != null) {
+				console.log(INTERSECTED.id);
+			}
+		}
+        //
+        // zoom on mouse wheel / trackpad zoom
+  	  	function onMouseWheel( event ) {
+  	  		event.preventDefault();
+	  	  	
+  	  		var fovMAX = 160;
+	  	    var fovMIN = 1;
+
+	  	    camera.fov -= event.wheelDeltaY * 0.05;
+	  	    camera.fov = Math.max( Math.min( camera.fov, fovMAX ), fovMIN );
+	  	    camera.projectionMatrix = new THREE.Matrix4().makePerspective(camera.fov, window.innerWidth / window.innerHeight, camera.near, camera.far);
+
+  	   	}
+        
+  	  	function keyPressed(event) {
+  	  		if(group != null) {
+	  	  		//alert(event.keyCode);
+			  	// 38 = Pfeil hoch
+			  	// 119 = w
+			    if(event.keyCode == 38 || event.keyCode == 119) {
+					console.log("up");
+					group.rotation.x -= 0.05;
+
+				}
+			  	// 40 = Pfeil runter
+			  	// 115 = s
+			  	if(event.keyCode == 40 || event.keyCode == 115) {
+			  	   console.log("down");
+			  	 group.rotation.x += 0.05;
+
+			  	}
+			  	// 39 = Pfeil rechts
+			  	// 100 = d
+			  	if(event.keyCode == 39 || event.keyCode == 100) {
+			  	   console.log("right");
+			  	 group.rotation.y += 0.05;
+
+			  	}
+			  	// 37 = Pfeil links
+			  	// 97 = a
+			  	if(event.keyCode == 37 || event.keyCode == 97) {
+			  	   console.log("left");
+			  	 group.rotation.y -= 0.05;
+
+			  	}
+
+		  		return event.returnValue;
+  	  		}
+  	  	}
+  	  	
+		//
+  	  	// textures
+  	  	//
+  	  	// getUrl - gibt die PicsLikeThat url zurueck
+  	  	function getPicsLikeThatUrl(kw, ic) {
+  	  		return 'http://viscomp1.f4.htw-berlin.de/tomcat/Fotoliaservlet/Search?k=' +
+  	  				kw + '&w=1292&h=537&l=2&n=' + ic + 
+  	  				'&va=0&vn=34&new=33&sem=33&hop=3&ab=50&tabid=1338981658631&call=?'; 
+  	  	}
+  	  	//
+  	  	// getSearchUrl - gibt die Search url zurueck
+  	  	function getUrl(kw, ic) {
+  	  		//var url =  'http://141.45.207.208:8080/vis-web/image/search?q=' + kw + '&max=' + ic; 
+  	  		var url =  baseUrl + 'search';
+  	  		if(sessionId != null) {
+	  			url += ';jsessionid='+sessionId;
+	  		}
+  	  		url += '?q=' + kw + '&max=' + ic;
+  	  		
+  	  		console.log(url);
+  	  		return url;
+  	  	}
+  	  	//
+   	  	// getContextUrl - gibt die URL zur context-Anfrage zurueck
+   	  	function getContextUrl(x, y) {
+   	  		var url = null;
+   	  		url = baseUrl + 'shift';
+	   	  	if(sessionId != null) {
+	  			url += ';jsessionid='+sessionId;
+	  		}
+   	  		url += '?x=' + x + '&y=' + y;
+   	  		
+   	  		console.log(url);
+   	  		return url;
+   	  	}	  	       
+  	
+  		// images ueber den link holen
+  	  	function getImageList(url) {	
+  	  		loadedImages = 0;
+  			url = 'http://localhost/webGL/webGlUsingThree/proxy.php?url='+escape(url);
+  			console.log(url);
+  			
+		  	  $.ajax(url, {
+		  	    crossDomain:true, 
+		  	    dataType: 'json',
+		  	    success:function(data){
+		  	    	var items = data.data;
+		  	    	console.log("received images: " + items.length);
+		  	    	if(items.length < imageCount) imageCount = items.length;
+		  	        $.each(items, function(i) {	  	        	
+	  	  	  			var img = items[i];
+	  	  	  			var src = 'http://t2.ftcdn.net/jpg/' + img.p + '.jpg';
+	  	  	  			img.canvas = getImageCanvas(src);
+	  	  	  			setImageToArray(imageList, img);
+	  	  	  		});			  	       
+		  	    }	  	      		  		
+	  	  	}); 	  		
+	  	}		  	       
+  	  	
+   	  	// zum handling mit einzelnen bildern als textur
+  	  	// packt ein einzelnes Bild in einen Canvas, damit die groesse fuer die Textur stimmt
+  	  	function getImageCanvas(src) {
+  	  		var canvas = document.createElement('canvas');
+	    	var img = new Image();
+	    	var ctx = canvas.getContext('2d'); 
+	    	img.crossOrigin = "Anonymous"; 
+	    	img.onload = function() {  
+	  	  		canvas.width = imgWidth; 
+		    	canvas.height = imgHeight;
+		    	ctx.drawImage(img, 0,0, imgWidth, imgHeight);
+		    	// erst draw() aufrufen wenn alle Bilder vollstaendig geladen wurden
+		    	loadedImages++;
+		    	if(imageCount == loadedImages) {
+	  	        	showLoadingSpinner(false);
+		    		draw();
+	  	        } 
+	    	}
+	    	
+	    	img.src = src;    	 	    	
+	    	return canvas;
+  	  	}     
+   	  	
+  		// context anhand der URL holen
+  	  	function getImageContextList(url, shiftX, shiftY) {
+  			loadedImages = 0;
+  			imageCount = 0;
+  			url = 'http://localhost/webGL/webGlUsingThree/proxy.php?url='+escape(url);
+  			console.log(url);
+  			
+		  	  $.ajax(url, {
+		  	    crossDomain:true, 
+		  	    dataType: 'json',
+		  	    success:function(data){
+		  	    	var items = data.data;
+		  	    	console.log("received images: " + items.length);
+		  	    	imageCount = items.length;
+		  	        $.each(items, function(i) {	  	        	
+	  	  	  			var img = items[i];
+	  	  	  			var src = 'http://t2.ftcdn.net/jpg/' + img.p + '.jpg';
+	  	  	  			img.canvas = getContextImageCanvas(src, shiftX, shiftY);
+	  	  	  			setImageToArray(contextList, img);
+	  	  	  		});			  	       
+		  	    }	  	      		  		
+	  	  	}); 	  		
+	  	}	
+  		
+   	  	// fuer den context
+  	  	function getContextImageCanvas(src, shiftX, shiftY) {
+  	  		var canvas = document.createElement('canvas');
+	    	var img = new Image();
+	    	var ctx = canvas.getContext('2d'); 
+	    	img.crossOrigin = "Anonymous"; 
+	    	img.onload = function() {  
+	  	  		canvas .width = imgWidth; 
+		    	canvas.height = imgHeight;
+		    	ctx.drawImage(img, 0,0, imgWidth, imgHeight);
+		    	// erst draw() aufrufen wenn alle Bilder vollstaendig geladen wurden
+		    	loadedImages++;
+		    	if(imageCount == loadedImages) {
+	  	        	drawContext(shiftX, shiftY);
+	  	        } 
+	    	}
+	    	
+	    	img.src = src;    	 	    	
+	    	return canvas;
+  	  	}  
+   	  	
+  		// pics like that images holen
+  	  	function getPicsLikeThatImageList(url) {
+	  		imageList = new Array();  	
+		  	  $.ajax(url, {
+		  	    crossDomain:true, 
+		  	    dataType: 'json',
+		  	    success:function(data){
+		  	    	var items = data.items;
+		  	    	console.log("received images: " + items.length);
+		  	    	if(items.length < imageCount) imageCount = items.length;
+		  	        $.each(items, function(i) {
+	  	  	  			var img = items[i];
+	  	  	  			var src = 'http://t2.ftcdn.net/jpg/' + img.u + '.jpg';
+	  	  	  			img.canvas = getImageCanvas(src);
+	  	  	  			imageList.push(img);
+	  	  	  		});	
+		  	    }	  	      		  		
+	  	  	}); 	  		
+	  	}	
+   	  	
+   	  	// zeigt waehrend des landes das drehende Laderad an
+   	  	// @Parameter show: true: Anzeigen. false: entfernen.
+   	  	function showLoadingSpinner(show) {
+   	  		var loadingDiv = document.getElementById('loading');
+   	  		if(show) {
+   	  			if(loadingDiv.firstChild) {
+   	  				loadingDiv.removeChild(loadingDiv.firstChild);
+   	  			}
+		   	  		var img = document.createElement("IMG");
+		   			img.src = "loader2.gif";
+		   	  		loadingDiv.appendChild(img);	
+   	  		}
+   	  		else {
+   	  			if(loadingDiv.firstChild) {
+   	  				loadingDiv.removeChild(loadingDiv.firstChild);
+   	  			}
+   	  		}
+   	  	}
+	  	
+	  	// helper: true if list contains obj
+  		function contains(list, obj) {
+	  		for(var i = 0; i < list.length; i++) {
+	  			for(var j = 0; j < list[i].length; j++) {
+		  			if(list[i][j].id == obj.id) {
+		  				return true;
+					  }
+	  			}
+	  		}
+  			return false;
+  		}
+   	  	
+   	  	// create new 2D Array zum halten der Bilder
+   	  	function create2DArrays() {
+   	  		// imageList
+   	  		imageList = new Array(arrayX);
+   	  		// contextList
+   	  		contextList = new Array(arrayX);
+   	  		
+   	  		for (i = 0; i < arrayX; i++) {
+   	  			imageList[i] = new Array(arrayY);
+   	  			contextList[i] = new Array(arrayY);
+   	  			for(var j = 0; j < arrayY; j++) {
+   	  				imageList[i][j] = null;
+   	  				contextList[i][j] = null;
+   	  			}
+   	  		}
+   	  	}
+   	  	
+   	  	// writes an image to the 2D Array
+   	  	function setImageToArray(array,image) {
+   	  		array[image.x][image.y] = image;
+   	  	}
+   	  	
+   	  	// delete an image from 2D Array
+   	  	function removeImageFromArray(array, image) {
+   	  		array[image.x][image.y] = null;
+   	  	}
+   	  	
+   	  	// shift Array
+   	  	function shiftArray(x, y) {
+   	  		var newArray = new Array(arrayX);
+   	  		for(var i = 0; i < arrayX; i++) {
+   	  			newArray[i] = new Array(arrayY);
+   	  		}	  		 
+ 
+   	  		for(var i = 0; i < arrayX; i++) {
+   	  			for(var j = 0; j < arrayY; j++) {
+   	  				var obj = imageList[i][j];
+   	  				if((i+x < arrayX) && (i+x >= 0) && (j+y < arrayY) && (j+y >= 0)) {
+   	  					newArray[i+x][j+y] = obj;
+   	  				}
+   	  			}
+   	  		}
+   	  		imageList = newArray;
+   	  	}
+   	  	
+   	  	function printArray(array) {
+   	  		console.log("Print array:");
+   	  		for(var i = 0; i < arrayX; i++) {
+   	  			for(var j = 0; j < arrayY; j++) {
+   	  				console.log(array[i][j]);
+   	  			}
+   	  		}
+   	  	}
+  	 
+  	</script>
+  </body>
+  
+</html>
+
+
+
+
+
+
+
+
+

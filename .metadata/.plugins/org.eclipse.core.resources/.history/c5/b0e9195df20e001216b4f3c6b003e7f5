@@ -1,0 +1,33 @@
+package vis.clustering.quad;
+
+import java.sql.Connection;
+
+import vis.db.ConnectionFactory;
+import vis.db.SqlHelper;
+
+public class QuadPosition {
+	Connection con;
+	
+	public QuadPosition(){
+		this.con = ConnectionFactory.getByName("images");
+	}
+	
+	public void write(int startLayer){
+		// get laycount
+		SqlHelper h = new SqlHelper(con);
+		int imageCount = h.max("images_"+startLayer);
+		System.out.println(imageCount);
+		
+		int x = 0;
+		int y = 0;
+	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		new QuadPosition().write(8);
+	}
+
+}

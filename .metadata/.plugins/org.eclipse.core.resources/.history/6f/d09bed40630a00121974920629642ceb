@@ -1,0 +1,8 @@
+package vis
+
+class ImageController {
+
+    def index() {
+		def searcher = new Searcher(new File("../index/index"))	
+	}
+}

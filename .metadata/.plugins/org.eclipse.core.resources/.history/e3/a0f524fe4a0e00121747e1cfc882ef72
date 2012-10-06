@@ -1,0 +1,22 @@
+package logging
+
+import org.apache.log4j.ConsoleAppender
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
+import org.apache.log4j.PatternLayout;
+
+class VisLog {
+
+	
+	static void initLogging(){
+		Logger logger = Logger.getRootLogger()
+		ConsoleAppender appender = new ConsoleAppender(new PatternLayout())
+		logger.addAppender(appender)
+		logger.setLevel(Level.DEBUG)
+	}
+
+	static main(args) {
+	
+	}
+
+}

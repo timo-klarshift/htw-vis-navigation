@@ -1,0 +1,33 @@
+package vis.importer;
+
+import java.io.File;
+
+public class IndexCreator {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		if(args.length == 0)
+			createTestIndex();
+	}
+	
+	public static void createTestIndex(){
+		createIndexFromCSV(new File("../../data/fotolia-csv-small"), 20, 0.01f);
+	}
+	
+	public static void createIndexFromCSV(File csvFolder, int maxFiles, float minDF){
+		CSVReader r = new CSVReader(maxFiles);
+		
+		// collect tags
+		CSVTagCollector col = new CSVTagCollector(minDF);
+		r.setCallback(col);
+		r.importDirectory(csvFolder);
+
+		// write
+		CSVImageWriter iw = new CSVImageWriter(col);
+		r.setCallback(iw);
+		r.importDirectory(csvFolder);
+	}
+
+}

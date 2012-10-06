@@ -1,0 +1,7 @@
+package vis.lucene;
+
+public class TemporaryIndex extends Indexer {
+
+
+
+}

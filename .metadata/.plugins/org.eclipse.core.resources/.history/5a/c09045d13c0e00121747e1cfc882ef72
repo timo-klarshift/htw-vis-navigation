@@ -1,0 +1,16 @@
+package logging
+
+class VisLog {
+	static {
+		initLogging()
+	}
+	
+	static void initLogging(){
+		
+	}
+
+	static main(args) {
+	
+	}
+
+}

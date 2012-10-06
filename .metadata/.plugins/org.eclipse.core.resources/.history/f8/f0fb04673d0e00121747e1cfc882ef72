@@ -1,0 +1,52 @@
+package vis.config
+
+import logging.VisLog
+
+import org.apache.log4j.Logger
+
+public class VisConfig {
+	private static VisConfig instance;
+	private ConfigObject config
+	private Logger log = Logger.getLogger("Config")
+	
+	
+	private VisConfig(){
+		// read default config
+		config = new ConfigObject()	
+		readDefaultConfig()
+	}
+	
+	public void readDefaultConfig(){
+		def c = new ConfigSlurper().parse(DefaultConfig)
+		config.merge(c)
+	}
+	
+	public void readProperties(File pFile){
+		log.info("Reading $pFile")
+		Properties p = new Properties()
+		p.load(new FileInputStream(pFile))
+		if(p != null){
+			def c = new ConfigSlurper().parse(p)	
+			config.merge(c)
+		}else
+			log.error ("Could not read $pFile")
+	}
+	
+	
+	
+	public static VisConfig getInstance(){
+		instance = instance ?: new VisConfig()
+	}
+	
+	public String toString(){
+		return config.toString()
+	}
+	
+	static main(args) {
+		VisLog.initLogging()
+		def c = VisConfig.getInstance()
+		c.readProperties(new File("./conf/importer.properties"))
+		println c
+	}
+
+}

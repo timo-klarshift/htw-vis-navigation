@@ -1,0 +1,79 @@
+package vis.importer;
+
+import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.swing.SwingUtilities;
+
+import org.apache.lucene.document.Document;
+
+import vis.clustering.ClusterFinder;
+import vis.lucene.SearchCallback;
+import vis.lucene.SearchResult;
+import vis.lucene.Searcher;
+import vis.view.GraphView;
+
+public class ImportAll {
+
+	public static void main(String args[]) {
+		//doImport();
+		// searchTest();
+		findClusters();
+
+	}
+
+	static void findClusters() {
+		// initial test
+		Searcher s = new Searcher(new File("index"));
+		final ClusterFinder finder = new ClusterFinder(s, 1.8*16);
+		
+		
+		finder.seed("woman");
+		
+		
+		s.close();
+		
+	}
+
+	static void doImport() {
+		File csvFolder = new File("../../data/fotolia-csv-small");
+		CSVReader r = new CSVReader();
+
+		// collect tags
+		CSVTagCollector col = new CSVTagCollector();
+		r.setCallback(col);
+		r.importDirectory(csvFolder);
+
+		// write
+		CSVImageWriter iw = new CSVImageWriter(col);
+		r.setCallback(iw);
+		r.importDirectory(csvFolder);
+	}
+
+	static void searchTest() {
+		// initial test
+		Searcher s = new Searcher(new File("index"));
+		Set<String> q = new HashSet<String>();
+		q.add("woman sexy");
+		q.add("mensch human mankind man");
+		q.add("fruit concept green breakfast one indoors nursery table snack classroom 1 apple vitamin hungry room");
+
+		SearchCallback sb = new SearchCallback() {
+
+			@Override
+			public boolean onResult(SearchResult r) {
+				System.out.println("\t" + r);
+				return true;
+			}
+		};
+
+		for (String z : q) {
+			s.search(z, 10, sb);
+			s.moreLike(z, 10, sb);
+		}
+
+		s.close();
+	}
+
+}

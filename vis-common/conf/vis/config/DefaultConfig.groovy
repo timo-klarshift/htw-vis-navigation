@@ -24,7 +24,7 @@ data {
  */
 importer {
 	
-	maxImages = Math.pow(4, 6) // second filter, above has to cover this
+	maxImages = Math.pow(4, 7) // second filter, above has to cover this
 	maxFiles = Math.round(maxImages / 1000.0)+3	// first filter
 	
 	tagCollector {

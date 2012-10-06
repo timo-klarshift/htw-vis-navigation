@@ -1,0 +1,21 @@
+package vis.config
+
+public class Arguments {
+	Map arguments = [:]
+	
+	public Arguments(String[] args){
+		String lastCmd
+		for(int a=0; a<args.length; a++){
+			String ca = args[a];
+			if(ca.startsWith("-")){
+				String cmd = ca.substring(1)
+				arguments[cmd] = true
+				lastCmd = cmd;
+			}else if(lastCmd){
+				arguments[lastCmd] = ca
+			}
+		}
+	}
+	
+
+}

@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="deploy" name="">
+
+	<target name="all" depends="vis-libs,vis,importer,indexer,searcher,generator">
+
+	</target>
+
+	<target name="quick" depends="vis">
+
+	</target>
+
+	<target name="importer" depends="vis-libs">
+		<jar destfile="../target/importer.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="org.htw.vis.setup.importer.CombinedImporter" />
+				<attribute name="Class-Path" value="vis-libs.jar" />
+			</manifest>
+
+			<fileset dir="../target/classes/" includes="org/htw/**" />
+		</jar>	
+		
+		<jar destfile="../target/tag-importer.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="org.htw.vis.setup.importer.TagImporter" />
+				<attribute name="Class-Path" value="vis-libs.jar" />
+			</manifest>
+
+			<fileset dir="../target/classes/" includes="org/htw/**" />
+		</jar>	
+	</target>
+
+	<target name="generator" depends="vis-libs">
+		<jar destfile="../target/pairer.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="org.htw.vis.setup.FinalPairing" />
+				<attribute name="Class-Path" value="vis-libs.jar" />
+			</manifest>
+
+			<fileset dir="../target/classes/" includes="org/htw/**" />
+		</jar>
+	</target>
+
+	<target name="searcher" depends="vis-libs">
+		<jar destfile="../target/searcher.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="org.htw.vis.setup.IndexSearcher" />
+				<attribute name="Class-Path" value="vis-libs.jar" />
+			</manifest>
+
+			<fileset dir="../target/classes/" includes="org/htw/**" />
+		</jar>
+	</target>
+	
+	
+
+	<target name="indexer" depends="vis-libs">
+		<jar destfile="../target/indexer.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="org.htw.vis.setup.NodeIndexer" />
+				<attribute name="Class-Path" value="vis-libs.jar" />
+			</manifest>
+			<fileset dir="../target/classes/" includes="org/htw/**" />
+		</jar>
+	</target>
+
+	<!-- move everything onto server -->
+	<target name="deploy" depends="all">
+
+
+		<scp file="../target/indexer.jar" todir="timo@3dvis:/home/timo/vis/lib" keyfile="${user.home}/.ssh/id_rsa" passphrase="" />
+
+
+		<scp file="../target/importer.jar" todir="timo@3dvis:/home/timo/vis/lib" keyfile="${user.home}/.ssh/id_rsa" passphrase="" />
+
+		<scp file="../target/tag-importer.jar" todir="timo@3dvis:/home/timo/vis/lib" keyfile="${user.home}/.ssh/id_rsa" passphrase="" />
+
+		
+		<scp file="../target/searcher.jar" todir="timo@3dvis:/home/timo/vis/lib" keyfile="${user.home}/.ssh/id_rsa" passphrase="" />
+
+
+		<scp file="../target/pairer.jar" todir="timo@3dvis:/home/timo/vis/lib" keyfile="${user.home}/.ssh/id_rsa" passphrase="" />
+
+		<!--
+		<scp file="../target/vis-libs.jar"
+		       todir="timo@3dvis:/home/timo/vis/lib" 
+		       keyfile="${user.home}/.ssh/id_rsa"
+		       passphrase=""
+		/>	
+	-->
+
+
+	</target>
+
+	<!-- VIS common -->
+	<target name="vis" description="Build all vis classes">
+		<jar destfile="../target/vis.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Class-Path" value="vis-libs.jar" />
+			</manifest>
+
+			<fileset dir="../target/classes/" includes="org/htw/**" />
+			<fileset dir="../src/" includes="log4j.properties" />
+
+		</jar>
+
+		<copy file="../target/vis.jar" toDir="../../vis-web/lib" />
+		<copy file="../target/vis.jar" toDir="../../vis-client/lib" />
+		<copy file="../target/vis.jar" toDir="../../vis-clustering/lib" />
+	</target>
+
+	<!-- VIS libraries -->
+	<target name="vis-libs" description="Build dependencies for vis">
+		<jar destfile="../target/vis-libs.jar" filesetmanifest="mergewithoutmain">
+			<zipfileset excludes="META-INF/*.SF" src="../lib/commons-dbcp-1.4.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/commons-math3-3.0.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/commons-pool-1.6.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/KittyCache-1.2.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/lucene-analyzers-3.5.0.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/lucene-core-3.5.0.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/lucene-queries-3.5.0.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/mysql-connector-java-5.1.18-bin.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/sqlitejdbc-v056.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="../lib/log4j-1.2.16.jar" />
+
+			<zipfileset excludes="META-INF/*.SF" src="/home/timo/.grails/ivy-cache/org.codehaus.groovy/groovy-all/jars/groovy-all-1.8.6.jar" />
+		</jar>
+
+		<!-- local deploy / copy files -->
+		<copy file="../target/vis-libs.jar" toDir="../../vis-client/lib" />
+		<copy file="../target/vis-libs.jar" toDir="../../vis-web/lib" />
+		<copy file="../target/vis-libs.jar" toDir="../../vis-clustering/lib" />
+		<copy file="../target/vis-libs.jar" toDir="../../vis-server/lib" />
+	</target>
+
+
+
+</project>

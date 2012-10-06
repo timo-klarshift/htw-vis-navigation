@@ -1,9 +1,0 @@
-package vis.db
-
-class SqlHelper {
-
-	static void dumpFile(File sqlFile){
-		getClass().getClassLoader().getResource("images.sql")
-	}
-
-}

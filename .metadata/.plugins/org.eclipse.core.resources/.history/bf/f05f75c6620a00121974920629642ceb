@@ -1,6 +1,0 @@
-package vis
-
-class ImageController {
-
-    def index() { }
-}

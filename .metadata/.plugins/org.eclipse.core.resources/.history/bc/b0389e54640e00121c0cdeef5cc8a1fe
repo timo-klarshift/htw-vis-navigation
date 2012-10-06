@@ -1,9 +1,0 @@
-package vis.lucene
-
-class IndexFactory {
-
-	static main(args) {
-	
-	}
-
-}

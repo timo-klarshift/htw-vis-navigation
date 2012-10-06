@@ -1,9 +1,0 @@
-package logging
-
-class VisLog {
-
-	static main(args) {
-	
-	}
-
-}

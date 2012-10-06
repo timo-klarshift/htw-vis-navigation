@@ -1,9 +1,0 @@
-package vis.db;
-
-class SqlHelper {
-
-	static main(args) {
-	
-	}
-
-}

@@ -1,9 +1,0 @@
-package vis.config
-
-class Arguments {
-
-	static main(args) {
-	
-	}
-
-}

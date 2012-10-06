@@ -1,6 +1,0 @@
-package vis.lucene;
-
-public class SimpleCallback implements SearchCallback {
-
-	
-}
